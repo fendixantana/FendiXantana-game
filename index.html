@@ -37,6 +37,15 @@
             bottom: 20px;
             left: 20px;
             display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .control-buttons {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: row;
             gap: 10px;
         }
         .control-button {
@@ -61,9 +70,11 @@
 <canvas id="gameCanvas"></canvas>
 <button id="playButton">Play</button>
 <div class="controls" style="display: none;">
-    <button class="control-button" id="leftButton">L</button>
-    <button class="control-button" id="rightButton">R</button>
-    <button class="control-button" id="jumpButton">J</button>
+    <div class="control-buttons">
+        <button class="control-button" id="leftButton">L</button>
+        <button class="control-button" id="rightButton">R</button>
+        <button class="control-button" id="jumpButton">J</button>
+    </div>
 </div>
 
 <script>
@@ -99,15 +110,17 @@ const backgroundMusic = new Audio('background_music.mp3');
 const winningMusic = new Audio('winningsong.mp3');
 backgroundMusic.loop = true;
 
+// Variables
 let player = { x: 100, y: 500, width: 50, height: 50, speed: 5, dy: 0, onGround: false, hasKey: false };
 let platforms = [
     { x: 0, y: 550, width: 3000, height: 50 },
-    { x: 300, y: 500, width: 200, height: 20 },
-    { x: 600, y: 450, width: 200, height: 20 },
-    { x: 900, y: 400, width: 200, height: 20 },
-    { x: 1200, y: 350, width: 200, height: 20 },
-    { x: 1500, y: 450, width: 200, height: 20 },
-    { x: 1800, y: 500, width: 200, height: 20 },
+    { x: 200, y: 500, width: 150, height: 20 },
+    { x: 400, y: 450, width: 150, height: 20 },
+    { x: 650, y: 400, width: 150, height: 20 },
+    { x: 900, y: 450, width: 150, height: 20 },
+    { x: 1200, y: 350, width: 150, height: 20 },
+    { x: 1500, y: 450, width: 150, height: 20 },
+    { x: 1800, y: 500, width: 150, height: 20 },
 ];
 let enemies = [
     { x: 500, y: 500, width: 50, height: 50, speed: 2, direction: 1 },
