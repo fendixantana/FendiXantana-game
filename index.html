@@ -75,112 +75,87 @@ const controls = document.querySelector('.controls');
 const leftButton = document.getElementById("leftButton");
 const rightButton = document.getElementById("rightButton");
 const jumpButton = document.getElementById("jumpButton");
+
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// Assets
-const assets = {
-    background: new Image(),
-    player: new Image(),
-    enemy: new Image(),
-    key: new Image(),
-    chest: new Image(),
-    winLogo: new Image(),
-};
-
-assets.background.src = "background.jpg";
-assets.player.src = "player1.png";
-assets.enemy.src = "Sbcoldcaller.png";
-assets.key.src = "key.png";
-assets.chest.src = "tchest.png";
-assets.winLogo.src = "winninglogo.png";
-
-// Audio
-const backgroundMusic = new Audio('background_music.mp3');
-const winningMusic = new Audio('winningsong.mp3');
-backgroundMusic.loop = true;
-
-// Variables
+// Game Variables
 let player = { x: 100, y: 500, width: 50, height: 50, speed: 5, dy: 0, onGround: false, hasKey: false };
-let enemies = [];
-let enemySpawnTimer = 0;
 let platforms = [
     { x: 0, y: 550, width: 3000, height: 50 },
-    { x: 200, y: 450, width: 150, height: 20 },
-    { x: 400, y: 400, width: 150, height: 20 },
-    { x: 600, y: 350, width: 150, height: 20 },
-    { x: 800, y: 300, width: 150, height: 20 },
-    { x: 1000, y: 350, width: 150, height: 20 },
-    { x: 1200, y: 400, width: 150, height: 20 },
-    { x: 1400, y: 450, width: 150, height: 20 },
-    { x: 1600, y: 400, width: 150, height: 20 },
-    { x: 1800, y: 350, width: 150, height: 20 },
-    { x: 2000, y: 300, width: 150, height: 20 },
-    { x: 2200, y: 250, width: 150, height: 20 },
-    { x: 2400, y: 200, width: 150, height: 20 },
-    { x: 2600, y: 150, width: 150, height: 20 },
-    { x: 2800, y: 100, width: 150, height: 20 },
+    { x: 200, y: 450, width: 200, height: 20 },
+    { x: 500, y: 400, width: 200, height: 20 },
+    { x: 800, y: 350, width: 200, height: 20 },
+    { x: 1200, y: 300, width: 200, height: 20 },
+    { x: 1600, y: 250, width: 200, height: 20 },
+    { x: 2000, y: 200, width: 200, height: 20 },
 ];
-let chest = { x: 2850, y: 50, width: 50, height: 50 };
+let chest = { x: 2100, y: 150, width: 50, height: 50 };
 let keys = [];
-let money = [];
 let winning = false;
-let winLogoY = 200;
-let winLogoSpeed = 2;
-let moneySpawnTimer = 0;
 let gameStarted = false;
-let cameraOffset = { x: 0, y: 0 };
-let worldWidth = 3000;
 
-// Movement Tracking
-let movement = { left: false, right: false, jump: false };
+// Event Listeners for Movement
+document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") player.x -= player.speed;
+    if (e.key === "ArrowRight") player.x += player.speed;
+    if (e.key === " " && player.onGround) player.dy = -15;
+});
 
-// Adjust Camera
-function adjustCamera() {
-    cameraOffset.x = Math.max(0, Math.min(player.x - canvas.width / 2, worldWidth - canvas.width));
-    cameraOffset.y = 0;
-}
+function update() {
+    player.dy += 1; // Gravity
+    player.y += player.dy;
 
-// Spawn enemies after some time
-function spawnEnemies() {
-    enemySpawnTimer++;
-    if (enemySpawnTimer > 300) {
-        if (enemies.length < 5) {
-            const newEnemy = {
-                x: Math.random() * worldWidth,
-                y: 500,
-                width: 50,
-                height: 50,
-                speed: 2,
-                direction: 1
-            };
-            enemies.push(newEnemy);
+    // Check for collision with platforms
+    player.onGround = false;
+    for (const platform of platforms) {
+        if (
+            player.x < platform.x + platform.width &&
+            player.x + player.width > platform.x &&
+            player.y + player.height >= platform.y &&
+            player.y + player.height <= platform.y + 10
+        ) {
+            player.y = platform.y - player.height;
+            player.dy = 0;
+            player.onGround = true;
         }
-        enemySpawnTimer = 0;
+    }
+
+    // Check for chest interaction
+    if (
+        player.x < chest.x + chest.width &&
+        player.x + player.width > chest.x &&
+        player.y < chest.y + chest.height &&
+        player.y + player.height > chest.y
+    ) {
+        winning = true;
     }
 }
 
-// Enemy AI: Track the player
-function updateEnemies() {
-    for (const enemy of enemies) {
-        if (enemy.x < player.x) {
-            enemy.direction = 1;
-        } else if (enemy.x > player.x) {
-            enemy.direction = -1;
-        }
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "green";
+    for (const platform of platforms) {
+        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+    }
+    ctx.fillStyle = "blue";
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.fillStyle = "gold";
+    ctx.fillRect(chest.x, chest.y, chest.width, chest.height);
+}
 
-        enemy.x += enemy.speed * enemy.direction;
+function loop() {
+    update();
+    draw();
+    if (!winning) requestAnimationFrame(loop);
+}
 
-        // Collision with edges of the world
-        if (enemy.x <= 0 || enemy.x + enemy.width >= worldWidth) {
-            enemy.direction *= -1;
-        }
-
-        // Player collision with enemies
-        if (isColliding(player, enemy)) {
-            if (player.dy > 0) {
-                enemies = enemies.filter(e => e !== enemy);
-                keys.push({ x: enemy.x, y: enemy.y, width: 20, height: 20 });
-            } else if (!player.has
-::contentReference[oaicite:0]{index=0}
- 
+playButton.addEventListener("click", () => {
+    playButton.style.display = "none";
+    controls.style.display = "flex";
+    gameStarted = true;
+    loop();
+});
+</script>
+</body>
+</html>
