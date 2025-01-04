@@ -102,10 +102,8 @@ backgroundMusic.loop = true;
 
 // Variables
 let player = { x: 100, y: 500, width: 50, height: 50, speed: 5, dy: 0, onGround: false, hasKey: false };
-let enemies = [
-    { x: 400, y: 500, width: 50, height: 50, speed: 2, direction: 1 },
-    { x: 200, y: 500, width: 50, height: 50, speed: 2, direction: 1 }
-];
+let enemies = [];
+let enemySpawnTimer = 0;
 let platforms = [
     { x: 0, y: 550, width: 3000, height: 50 }, // Fully extended floor covering the entire game world
     { x: 300, y: 450, width: 200, height: 20 }, // Example elevated platform
@@ -132,6 +130,25 @@ let movement = { left: false, right: false, jump: false };
 function adjustCamera() {
     cameraOffset.x = Math.max(0, Math.min(player.x - canvas.width / 2, worldWidth - canvas.width));
     cameraOffset.y = 0; // Keep the Y-axis stable
+}
+
+// Spawn enemies after some time
+function spawnEnemies() {
+    enemySpawnTimer++;
+    if (enemySpawnTimer > 300) { // Delay enemy spawn by 300 frames
+        if (enemies.length < 5) {
+            const newEnemy = {
+                x: Math.random() * worldWidth,
+                y: 500,
+                width: 50,
+                height: 50,
+                speed: 2,
+                direction: 1
+            };
+            enemies.push(newEnemy);
+        }
+        enemySpawnTimer = 0;
+    }
 }
 
 // Enemy AI: Track the player
@@ -245,7 +262,8 @@ function update() {
         // Adjust Camera
         adjustCamera();
 
-        // Update enemies
+        // Spawn and update enemies
+        spawnEnemies();
         updateEnemies();
 
         // Chest Interaction
