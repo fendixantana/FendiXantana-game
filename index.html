@@ -105,23 +105,14 @@ let player = { x: 100, y: 500, width: 50, height: 50, speed: 5, dy: 0, onGround:
 let enemies = [];
 let enemySpawnTimer = 0;
 let platforms = [
-    { x: 0, y: 550, width: 3000, height: 50 },
-    { x: 200, y: 450, width: 150, height: 20 },
-    { x: 400, y: 400, width: 150, height: 20 },
-    { x: 600, y: 350, width: 150, height: 20 },
-    { x: 800, y: 300, width: 150, height: 20 },
-    { x: 1000, y: 350, width: 150, height: 20 },
-    { x: 1200, y: 400, width: 150, height: 20 },
-    { x: 1400, y: 450, width: 150, height: 20 },
-    { x: 1600, y: 400, width: 150, height: 20 },
-    { x: 1800, y: 350, width: 150, height: 20 },
-    { x: 2000, y: 300, width: 150, height: 20 },
-    { x: 2200, y: 250, width: 150, height: 20 },
-    { x: 2400, y: 200, width: 150, height: 20 },
-    { x: 2600, y: 150, width: 150, height: 20 },
-    { x: 2800, y: 100, width: 150, height: 20 },
+    { x: 0, y: 550, width: 3000, height: 50 }, // Fully extended floor covering the entire game world
+    { x: 300, y: 450, width: 200, height: 20 }, // Example elevated platform
+    { x: 600, y: 350, width: 150, height: 20 }, // Higher platform leading to shortcut
+    { x: 1000, y: 500, width: 100, height: 20 }, // Dead-end platform
+    { x: 1500, y: 400, width: 250, height: 20 }, // Long platform with a path to the next area
+    { x: 2000, y: 300, width: 150, height: 20 }, // High shortcut platform
 ];
-let chest = { x: 2850, y: 50, width: 50, height: 50 }; // Chest hidden in the platform maze
+let chest = { x: 2950, y: 500, width: 50, height: 50 }; // Chest placed at the far right end of the floor
 let keys = [];
 let money = [];
 let winning = false;
@@ -280,7 +271,7 @@ function update() {
             winning = true;
             backgroundMusic.pause();
             backgroundMusic.currentTime = 0;
-            winningMusic.play().catch(() => console.log("Winning song playback issue."));
+            winningMusic.play();
         }
 
         // Key Collection
