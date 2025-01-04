@@ -32,53 +32,20 @@
         #playButton:hover {
             background-color: #218838;
         }
-        .controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        .control-button {
-            width: 60px;
-            height: 60px;
-            background-color: #555;
-            color: white;
-            font-size: 18px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .control-button:active {
-            background-color: #777;
-        }
     </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
 <button id="playButton">Play</button>
-<div class="controls" style="display: none;">
-    <button class="control-button" id="leftButton">L</button>
-    <button class="control-button" id="rightButton">R</button>
-    <button class="control-button" id="jumpButton">J</button>
-</div>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const playButton = document.getElementById("playButton");
-const controls = document.querySelector('.controls');
-const leftButton = document.getElementById("leftButton");
-const rightButton = document.getElementById("rightButton");
-const jumpButton = document.getElementById("jumpButton");
 
-canvas.width = 800;
-canvas.height = 600;
+canvas.width = window.innerWidth; // Dynamically size canvas to fit screen
+canvas.height = window.innerHeight;
 
-// Assets
 const assets = {
     background: new Image(),
     player: new Image(),
@@ -95,80 +62,79 @@ assets.key.src = "key.png";
 assets.chest.src = "tchest.png";
 assets.winLogo.src = "winninglogo.png";
 
-// Audio
 const backgroundMusic = new Audio('background_music.mp3');
 const winningMusic = new Audio('winningsong.mp3');
 backgroundMusic.loop = true;
 
-// Variables
 let player = { x: 100, y: 500, width: 50, height: 50, speed: 5, dy: 0, onGround: false, hasKey: false };
 let enemies = [
-    { x: 400, y: 500, width: 50, height: 50, speed: 2, direction: 1 },
-    { x: 600, y: 500, width: 50, height: 50, speed: 2, direction: -1 }
+    { x: 500, y: 450, width: 50, height: 50, speed: 2, direction: 1 },
+    { x: 1200, y: 350, width: 50, height: 50, speed: 2, direction: -1 },
 ];
 let platforms = [
-    { x: 0, y: 550, width: 800, height: 50 },
-    { x: 300, y: 400, width: 200, height: 20 },
-    { x: 600, y: 300, width: 150, height: 20 }
+    { x: 0, y: 550, width: 1200, height: 50 },
+    { x: 300, y: 450, width: 200, height: 20 },
+    { x: 600, y: 350, width: 200, height: 20 },
+    { x: 1200, y: 300, width: 150, height: 20 },
+    { x: 1500, y: 450, width: 150, height: 20 },
 ];
-let chest = { x: 750, y: 500, width: 50, height: 50 };
+let chest = { x: 1600, y: 400, width: 50, height: 50 };
 let keys = [];
 let money = [];
 let winning = false;
 let winLogoY = 200;
 let winLogoSpeed = 2;
 let moneySpawnTimer = 0;
+let cameraOffset = { x: 0, y: 0 };
 let gameStarted = false;
 
-// Input
 const keysPressed = {};
 window.addEventListener("keydown", (e) => keysPressed[e.key] = true);
 window.addEventListener("keyup", (e) => keysPressed[e.key] = false);
 
-// Mobile Touch Controls
-leftButton.addEventListener("touchstart", () => keysPressed["ArrowLeft"] = true);
-leftButton.addEventListener("touchend", () => keysPressed["ArrowLeft"] = false);
-rightButton.addEventListener("touchstart", () => keysPressed["ArrowRight"] = true);
-rightButton.addEventListener("touchend", () => keysPressed["ArrowRight"] = false);
-jumpButton.addEventListener("touchstart", () => keysPressed[" "] = true);
-jumpButton.addEventListener("touchend", () => keysPressed[" "] = false);
+function adjustCamera() {
+    const halfCanvasWidth = canvas.width / 2;
+    cameraOffset.x = Math.max(0, Math.min(player.x - halfCanvasWidth, platforms[platforms.length - 1].x + platforms[platforms.length - 1].width - canvas.width));
+    cameraOffset.y = 0; // Keep vertical camera fixed
+}
 
-// Game Update
+function drawImage(obj, image) {
+    ctx.drawImage(image, obj.x - cameraOffset.x, obj.y - cameraOffset.y, obj.width, obj.height);
+}
+
+function isColliding(rect1, rect2) {
+    return rect1.x < rect2.x + rect2.width &&
+           rect1.x + rect1.width > rect2.x &&
+           rect1.y < rect2.y + rect2.height &&
+           rect1.y + rect1.height > rect2.y;
+}
+
 function update() {
     if (!winning) {
-        // Player Movement
         if (keysPressed["ArrowLeft"] && player.x > 0) player.x -= player.speed;
-        if (keysPressed["ArrowRight"] && player.x + player.width < canvas.width) player.x += player.speed;
+        if (keysPressed["ArrowRight"] && player.x + player.width < platforms[platforms.length - 1].x + platforms[platforms.length - 1].width) player.x += player.speed;
         if (keysPressed[" "] && player.onGround) {
             player.dy = -15;
             player.onGround = false;
         }
 
-        player.dy += 1; // Gravity
+        player.dy += 1;
         player.y += player.dy;
 
-        // Platform Collision
         player.onGround = false;
         for (const platform of platforms) {
-            if (player.x < platform.x + platform.width &&
-                player.x + player.width > platform.x &&
-                player.y + player.height >= platform.y &&
-                player.y + player.height <= platform.y + 10) {
+            if (isColliding(player, platform)) {
                 player.y = platform.y - player.height;
                 player.dy = 0;
                 player.onGround = true;
             }
         }
 
-        // Enemy Movement
         for (const enemy of enemies) {
             enemy.x += enemy.speed * enemy.direction;
-            if (enemy.x <= 0 || enemy.x + enemy.width >= canvas.width) enemy.direction *= -1;
+            if (enemy.x <= 0 || enemy.x + enemy.width >= platforms[platforms.length - 1].x + platforms[platforms.length - 1].width) enemy.direction *= -1;
 
-            if (player.x < enemy.x + enemy.width &&
-                player.x + player.width > enemy.x &&
-                player.y < enemy.y + enemy.height &&
-                player.y + player.height > enemy.y) {
+            if (isColliding(player, enemy)) {
                 if (player.dy > 0) {
                     enemies = enemies.filter(e => e !== enemy);
                     keys.push({ x: enemy.x, y: enemy.y, width: 20, height: 20 });
@@ -179,80 +145,58 @@ function update() {
             }
         }
 
-        // Chest Interaction
-        if (player.hasKey && player.x < chest.x + chest.width &&
-            player.x + player.width > chest.x &&
-            player.y < chest.y + chest.height &&
-            player.y + player.height > chest.y) {
-            winning = true;
-            backgroundMusic.pause();
-            winningMusic.play();
-        }
-
-        // Key Collection
         for (const key of keys) {
-            if (player.x < key.x + key.width &&
-                player.x + player.width > key.x &&
-                player.y < key.y + key.height &&
-                player.y + player.height > key.y) {
+            if (isColliding(player, key)) {
                 player.hasKey = true;
                 keys = keys.filter(k => k !== key);
             }
         }
+
+        if (player.hasKey && isColliding(player, chest)) {
+            winning = true;
+            backgroundMusic.pause();
+            winningMusic.play();
+        }
+        adjustCamera();
     } else {
-        // Winning State
         moneySpawnTimer++;
-        if (moneySpawnTimer % 10 === 0) {
-            money.push({ x: Math.random() * canvas.width, y: 0, dy: 2 });
-        }
-        for (const bill of money) {
-            bill.y += bill.dy;
-        }
+        if (moneySpawnTimer % 10 === 0) money.push({ x: Math.random() * canvas.width + cameraOffset.x, y: 0, dy: 2 });
+
+        for (const bill of money) bill.y += bill.dy;
 
         winLogoY += winLogoSpeed;
         if (winLogoY <= 0 || winLogoY + 200 >= canvas.height) winLogoSpeed *= -1;
     }
 }
 
-// Game Render
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(assets.background, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(assets.background, -cameraOffset.x, -cameraOffset.y, platforms[platforms.length - 1].x + platforms[platforms.length - 1].width, canvas.height);
 
     for (const platform of platforms) {
         ctx.fillStyle = "green";
-        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+        ctx.fillRect(platform.x - cameraOffset.x, platform.y - cameraOffset.y, platform.width, platform.height);
     }
 
-    ctx.drawImage(assets.player, player.x, player.y, player.width, player.height);
-
-    for (const enemy of enemies) {
-        ctx.drawImage(assets.enemy, enemy.x, enemy.y, enemy.width, enemy.height);
-    }
-
-    for (const key of keys) {
-        ctx.drawImage(assets.key, key.x, key.y, key.width, key.height);
-    }
-
-    ctx.drawImage(assets.chest, chest.x, chest.y, chest.width, chest.height);
+    drawImage(player, assets.player);
+    for (const enemy of enemies) drawImage(enemy, assets.enemy);
+    for (const key of keys) drawImage(key, assets.key);
+    drawImage(chest, assets.chest);
 
     if (winning) {
         ctx.drawImage(assets.winLogo, canvas.width / 2 - 200, winLogoY, 400, 200);
     }
 }
 
-// Game Loop
 function gameLoop() {
     update();
     draw();
     requestAnimationFrame(gameLoop);
 }
 
-// Start Game
 playButton.addEventListener("click", () => {
     playButton.style.display = "none";
     canvas.style.display = "block";
-    controls.style.display = "flex";
     gameStarted = true;
     backgroundMusic.play();
     gameLoop();
