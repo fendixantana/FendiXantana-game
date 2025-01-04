@@ -180,13 +180,13 @@ function isColliding(rect1, rect2) {
 function update() {
     if (!winning) {
         // Continuous movement for touch controls
-        if ((movement.left || keysPressed["ArrowLeft"]) && player.x > 0) {
+        if ((movement.left) && player.x > 0) {
             player.x -= player.speed;
         }
-        if ((movement.right || keysPressed["ArrowRight"]) && player.x + player.width < worldWidth) {
+        if ((movement.right) && player.x + player.width < worldWidth) {
             player.x += player.speed;
         }
-        if ((movement.jump || keysPressed[" "]) && player.onGround) {
+        if ((movement.jump) && player.onGround) {
             player.dy = -15;
             player.onGround = false;
         }
@@ -228,9 +228,7 @@ function update() {
             winning = true;
             backgroundMusic.pause();
             backgroundMusic.currentTime = 0;
-            if (!winningMusic.playing) {
-                winningMusic.play();
-            }
+            winningMusic.play();
         }
 
         // Key Collection
@@ -244,7 +242,7 @@ function update() {
         // Winning State
         moneySpawnTimer++;
         if (moneySpawnTimer % 10 === 0) { // Spawn money every 10 frames
-            money.push({ x: Math.random() * canvas.width, y: 0, dy: 2 });
+            money.push({ x: Math.random() * canvas.width + cameraOffset.x, y: 0, dy: 2 });
         }
 
         for (const bill of money) {
@@ -259,3 +257,33 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(assets.background, 0, 0, worldWidth, canvas.height);
+
+    for (const platform of platforms) drawRect(platform, "green");
+    drawImage(player, assets.player);
+    for (const enemy of enemies) drawImage(enemy, assets.enemy);
+    for (const key of keys) drawImage(key, assets.key);
+    drawImage(chest, assets.chest);
+
+    if (winning) {
+        for (const bill of money) drawRect(bill, "yellow");
+        ctx.drawImage(assets.winLogo, canvas.width / 2 - 200, winLogoY, 400, 200);
+    }
+}
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+playButton.addEventListener("click", () => {
+    playButton.style.display = "none";
+    canvas.style.display = "block";
+    controls.style.display = "flex";
+    gameStarted = true;
+    backgroundMusic.play();
+    loop();
+});
+</script>
+</body>
+</html>
