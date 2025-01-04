@@ -43,9 +43,10 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const playButton = document.getElementById("playButton");
 
-canvas.width = window.innerWidth; // Dynamically size canvas to fit screen
+canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+// Asset Paths
 const assets = {
     background: new Image(),
     player: new Image(),
@@ -54,7 +55,6 @@ const assets = {
     chest: new Image(),
     winLogo: new Image(),
 };
-
 assets.background.src = "background.jpg";
 assets.player.src = "player1.png";
 assets.enemy.src = "Sbcoldcaller.png";
@@ -62,44 +62,33 @@ assets.key.src = "key.png";
 assets.chest.src = "tchest.png";
 assets.winLogo.src = "winninglogo.png";
 
+// Audio
 const backgroundMusic = new Audio('background_music.mp3');
 const winningMusic = new Audio('winningsong.mp3');
 backgroundMusic.loop = true;
 
+// Variables
 let player = { x: 100, y: 500, width: 50, height: 50, speed: 5, dy: 0, onGround: false, hasKey: false };
-let enemies = [
-    { x: 500, y: 450, width: 50, height: 50, speed: 2, direction: 1 },
-    { x: 1200, y: 350, width: 50, height: 50, speed: 2, direction: -1 },
-];
 let platforms = [
-    { x: 0, y: 550, width: 1200, height: 50 },
+    { x: 0, y: 550, width: 2000, height: 50 },
     { x: 300, y: 450, width: 200, height: 20 },
     { x: 600, y: 350, width: 200, height: 20 },
+    { x: 900, y: 400, width: 150, height: 20 },
     { x: 1200, y: 300, width: 150, height: 20 },
-    { x: 1500, y: 450, width: 150, height: 20 },
 ];
-let chest = { x: 1600, y: 400, width: 50, height: 50 };
+let enemies = [
+    { x: 500, y: 500, width: 50, height: 50, speed: 2, direction: 1 },
+    { x: 1400, y: 400, width: 50, height: 50, speed: 2, direction: -1 },
+];
+let chest = { x: 1800, y: 500, width: 50, height: 50 };
 let keys = [];
 let money = [];
 let winning = false;
-let winLogoY = 200;
-let winLogoSpeed = 2;
-let moneySpawnTimer = 0;
 let cameraOffset = { x: 0, y: 0 };
-let gameStarted = false;
 
-const keysPressed = {};
-window.addEventListener("keydown", (e) => keysPressed[e.key] = true);
-window.addEventListener("keyup", (e) => keysPressed[e.key] = false);
-
-function adjustCamera() {
-    const halfCanvasWidth = canvas.width / 2;
-    cameraOffset.x = Math.max(0, Math.min(player.x - halfCanvasWidth, platforms[platforms.length - 1].x + platforms[platforms.length - 1].width - canvas.width));
-    cameraOffset.y = 0; // Keep vertical camera fixed
-}
-
-function drawImage(obj, image) {
-    ctx.drawImage(image, obj.x - cameraOffset.x, obj.y - cameraOffset.y, obj.width, obj.height);
+// Helper Functions
+function drawObject(obj, img) {
+    ctx.drawImage(img, obj.x - cameraOffset.x, obj.y - cameraOffset.y, obj.width, obj.height);
 }
 
 function isColliding(rect1, rect2) {
@@ -109,7 +98,11 @@ function isColliding(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
-function update() {
+function adjustCamera() {
+    cameraOffset.x = Math.max(0, Math.min(player.x - canvas.width / 2, platforms[platforms.length - 1].x + platforms[platforms.length - 1].width - canvas.width));
+}
+
+function updateGame() {
     if (!winning) {
         if (keysPressed["ArrowLeft"] && player.x > 0) player.x -= player.speed;
         if (keysPressed["ArrowRight"] && player.x + player.width < platforms[platforms.length - 1].x + platforms[platforms.length - 1].width) player.x += player.speed;
@@ -157,47 +150,45 @@ function update() {
             backgroundMusic.pause();
             winningMusic.play();
         }
+
         adjustCamera();
-    } else {
-        moneySpawnTimer++;
-        if (moneySpawnTimer % 10 === 0) money.push({ x: Math.random() * canvas.width + cameraOffset.x, y: 0, dy: 2 });
-
-        for (const bill of money) bill.y += bill.dy;
-
-        winLogoY += winLogoSpeed;
-        if (winLogoY <= 0 || winLogoY + 200 >= canvas.height) winLogoSpeed *= -1;
     }
 }
 
-function draw() {
+function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(assets.background, -cameraOffset.x, -cameraOffset.y, platforms[platforms.length - 1].x + platforms[platforms.length - 1].width, canvas.height);
+    ctx.drawImage(assets.background, 0 - cameraOffset.x, 0, platforms[platforms.length - 1].x + platforms[platforms.length - 1].width, canvas.height);
 
     for (const platform of platforms) {
         ctx.fillStyle = "green";
         ctx.fillRect(platform.x - cameraOffset.x, platform.y - cameraOffset.y, platform.width, platform.height);
     }
 
-    drawImage(player, assets.player);
-    for (const enemy of enemies) drawImage(enemy, assets.enemy);
-    for (const key of keys) drawImage(key, assets.key);
-    drawImage(chest, assets.chest);
+    drawObject(player, assets.player);
+    for (const enemy of enemies) drawObject(enemy, assets.enemy);
+    for (const key of keys) drawObject(key, assets.key);
+    drawObject(chest, assets.chest);
 
     if (winning) {
-        ctx.drawImage(assets.winLogo, canvas.width / 2 - 200, winLogoY, 400, 200);
+        money.push({ x: Math.random() * canvas.width + cameraOffset.x, y: 0, dy: 2 });
+        for (const bill of money) bill.y += bill.dy;
+        ctx.drawImage(assets.winLogo, canvas.width / 2 - 200, 200, 400, 200);
     }
 }
 
 function gameLoop() {
-    update();
-    draw();
+    updateGame();
+    drawGame();
     requestAnimationFrame(gameLoop);
 }
+
+let keysPressed = {};
+window.addEventListener("keydown", (e) => keysPressed[e.key] = true);
+window.addEventListener("keyup", (e) => keysPressed[e.key] = false);
 
 playButton.addEventListener("click", () => {
     playButton.style.display = "none";
     canvas.style.display = "block";
-    gameStarted = true;
     backgroundMusic.play();
     gameLoop();
 });
