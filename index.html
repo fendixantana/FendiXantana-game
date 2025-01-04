@@ -167,4 +167,85 @@ function update() {
                 player.dy = 0;
                 player.onGround = true;
             }
- 
+        }
+
+        // Enemy Movement
+        for (const enemy of enemies) {
+            enemy.x += enemy.speed * enemy.direction;
+            if (enemy.x <= 0 || enemy.x + enemy.width >= canvas.width) enemy.direction *= -1;
+
+            if (isColliding(player, enemy)) {
+                if (player.dy > 0) {
+                    enemies = enemies.filter(e => e !== enemy);
+                    keys.push({ x: enemy.x, y: enemy.y, width: 20, height: 20 });
+                } else if (!player.hasKey) {
+                    alert("Game Over!");
+                    window.location.reload();
+                }
+            }
+        }
+
+        // Chest Interaction
+        if (player.hasKey && isColliding(player, chest)) {
+            winning = true;
+            backgroundMusic.pause();
+            winningMusic.play();
+        }
+
+        // Key Collection
+        for (const key of keys) {
+            if (isColliding(player, key)) {
+                player.hasKey = true;
+                keys = keys.filter(k => k !== key);
+            }
+        }
+    } else {
+        // Winning State
+        moneySpawnTimer++;
+        if (moneySpawnTimer % 10 === 0) {
+            money.push({ x: Math.random() * canvas.width, y: 0, dy: 2 });
+        }
+        for (const bill of money) {
+            bill.y += bill.dy;
+        }
+
+        winLogoY += winLogoSpeed;
+        if (winLogoY <= 0 || winLogoY + 200 >= canvas.height) winLogoSpeed *= -1;
+    }
+}
+
+// Game Render
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(assets.background, 0, 0, canvas.width, canvas.height);
+
+    for (const platform of platforms) drawImage(platform, assets.key);
+    drawImage(player, assets.player);
+    for (const enemy of enemies) drawImage(enemy, assets.enemy);
+    for (const key of keys) drawImage(key, assets.key);
+    drawImage(chest, assets.chest);
+
+    if (winning) {
+        ctx.drawImage(assets.winLogo, canvas.width / 2 - 200, winLogoY, 400, 200);
+    }
+}
+
+// Game Loop
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Start Game
+playButton.addEventListener("click", () => {
+    playButton.style.display = "none";
+    canvas.style.display = "block";
+    controls.style.display = "flex";
+    gameStarted = true;
+    backgroundMusic.play();
+    gameLoop();
+});
+</script>
+</body>
+</html>
