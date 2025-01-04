@@ -133,18 +133,6 @@ rightButton.addEventListener("touchend", () => keysPressed["ArrowRight"] = false
 jumpButton.addEventListener("touchstart", () => keysPressed[" "] = true);
 jumpButton.addEventListener("touchend", () => keysPressed[" "] = false);
 
-// Helper Functions
-function drawImage(obj, image) {
-    ctx.drawImage(image, obj.x, obj.y, obj.width, obj.height);
-}
-
-function isColliding(rect1, rect2) {
-    return rect1.x < rect2.x + rect2.width &&
-           rect1.x + rect1.width > rect2.x &&
-           rect1.y < rect2.y + rect2.height &&
-           rect1.y + rect1.height > rect2.y;
-}
-
 // Game Update
 function update() {
     if (!winning) {
@@ -162,7 +150,10 @@ function update() {
         // Platform Collision
         player.onGround = false;
         for (const platform of platforms) {
-            if (isColliding(player, platform)) {
+            if (player.x < platform.x + platform.width &&
+                player.x + player.width > platform.x &&
+                player.y + player.height >= platform.y &&
+                player.y + player.height <= platform.y + 10) {
                 player.y = platform.y - player.height;
                 player.dy = 0;
                 player.onGround = true;
@@ -174,7 +165,10 @@ function update() {
             enemy.x += enemy.speed * enemy.direction;
             if (enemy.x <= 0 || enemy.x + enemy.width >= canvas.width) enemy.direction *= -1;
 
-            if (isColliding(player, enemy)) {
+            if (player.x < enemy.x + enemy.width &&
+                player.x + player.width > enemy.x &&
+                player.y < enemy.y + enemy.height &&
+                player.y + player.height > enemy.y) {
                 if (player.dy > 0) {
                     enemies = enemies.filter(e => e !== enemy);
                     keys.push({ x: enemy.x, y: enemy.y, width: 20, height: 20 });
@@ -186,7 +180,10 @@ function update() {
         }
 
         // Chest Interaction
-        if (player.hasKey && isColliding(player, chest)) {
+        if (player.hasKey && player.x < chest.x + chest.width &&
+            player.x + player.width > chest.x &&
+            player.y < chest.y + chest.height &&
+            player.y + player.height > chest.y) {
             winning = true;
             backgroundMusic.pause();
             winningMusic.play();
@@ -194,7 +191,10 @@ function update() {
 
         // Key Collection
         for (const key of keys) {
-            if (isColliding(player, key)) {
+            if (player.x < key.x + key.width &&
+                player.x + player.width > key.x &&
+                player.y < key.y + key.height &&
+                player.y + player.height > key.y) {
                 player.hasKey = true;
                 keys = keys.filter(k => k !== key);
             }
@@ -219,11 +219,22 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(assets.background, 0, 0, canvas.width, canvas.height);
 
-    for (const platform of platforms) drawImage(platform, assets.key);
-    drawImage(player, assets.player);
-    for (const enemy of enemies) drawImage(enemy, assets.enemy);
-    for (const key of keys) drawImage(key, assets.key);
-    drawImage(chest, assets.chest);
+    for (const platform of platforms) {
+        ctx.fillStyle = "green";
+        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+    }
+
+    ctx.drawImage(assets.player, player.x, player.y, player.width, player.height);
+
+    for (const enemy of enemies) {
+        ctx.drawImage(assets.enemy, enemy.x, enemy.y, enemy.width, enemy.height);
+    }
+
+    for (const key of keys) {
+        ctx.drawImage(assets.key, key.x, key.y, key.width, key.height);
+    }
+
+    ctx.drawImage(assets.chest, chest.x, chest.y, chest.width, chest.height);
 
     if (winning) {
         ctx.drawImage(assets.winLogo, canvas.width / 2 - 200, winLogoY, 400, 200);
