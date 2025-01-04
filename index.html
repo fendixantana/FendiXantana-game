@@ -120,26 +120,42 @@ let winLogoSpeed = 2;
 let moneySpawnTimer = 0;
 let gameStarted = false;
 
-// Input
-const keysPressed = {};
-window.addEventListener("keydown", (e) => keysPressed[e.key] = true);
-window.addEventListener("keyup", (e) => keysPressed[e.key] = false);
+// Movement Tracking
+let movement = { left: false, right: false, jump: false };
 
-// Touch Controls
-leftButton.addEventListener("touchstart", () => keysPressed["ArrowLeft"] = true);
-leftButton.addEventListener("touchend", () => keysPressed["ArrowLeft"] = false);
-rightButton.addEventListener("touchstart", () => keysPressed["ArrowRight"] = true);
-rightButton.addEventListener("touchend", () => keysPressed["ArrowRight"] = false);
-jumpButton.addEventListener("touchstart", () => keysPressed[" "] = true);
-jumpButton.addEventListener("touchend", () => keysPressed[" "] = false);
+// Touch Controls for Mobile
+leftButton.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    movement.left = true;
+});
+leftButton.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    movement.left = false;
+});
+rightButton.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    movement.right = true;
+});
+rightButton.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    movement.right = false;
+});
+jumpButton.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    movement.jump = true;
+});
+jumpButton.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    movement.jump = false;
+});
 
 // Also maintain existing mouse events for desktops
-leftButton.addEventListener("mousedown", () => keysPressed["ArrowLeft"] = true);
-leftButton.addEventListener("mouseup", () => keysPressed["ArrowLeft"] = false);
-rightButton.addEventListener("mousedown", () => keysPressed["ArrowRight"] = true);
-rightButton.addEventListener("mouseup", () => keysPressed["ArrowRight"] = false);
-jumpButton.addEventListener("mousedown", () => keysPressed[" "] = true);
-jumpButton.addEventListener("mouseup", () => keysPressed[" "] = false);
+leftButton.addEventListener("mousedown", () => movement.left = true);
+leftButton.addEventListener("mouseup", () => movement.left = false);
+rightButton.addEventListener("mousedown", () => movement.right = true);
+rightButton.addEventListener("mouseup", () => movement.right = false);
+jumpButton.addEventListener("mousedown", () => movement.jump = true);
+jumpButton.addEventListener("mouseup", () => movement.jump = false);
 
 // Helper Functions
 function drawRect(obj, color) {
@@ -161,11 +177,14 @@ function isColliding(rect1, rect2) {
 // Game Loop
 function update() {
     if (!winning) {
-        // Player Movement
-        if (keysPressed["ArrowLeft"] && player.x > 0) player.x -= player.speed;
-        if (keysPressed["ArrowRight"] && player.x + player.width < canvas.width) player.x += player.speed;
-
-        if (keysPressed[" "] && player.onGround) {
+        // Continuous movement for touch controls
+        if ((movement.left || keysPressed["ArrowLeft"]) && player.x > 0) {
+            player.x -= player.speed;
+        }
+        if ((movement.right || keysPressed["ArrowRight"]) && player.x + player.width < canvas.width) {
+            player.x += player.speed;
+        }
+        if ((movement.jump || keysPressed[" "]) && player.onGround) {
             player.dy = -15;
             player.onGround = false;
         }
@@ -256,14 +275,4 @@ function loop() {
     }
 }
 
-playButton.addEventListener("click", () => {
-    playButton.style.display = "none";
-    canvas.style.display = "block";
-    controls.style.display = "flex";
-    gameStarted = true;
-    backgroundMusic.play();
-    loop();
-});
-</script>
-</body>
-</html>
+playButton.addEventListener("click
