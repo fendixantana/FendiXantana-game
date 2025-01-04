@@ -107,13 +107,9 @@ let enemies = [
     { x: 200, y: 500, width: 50, height: 50, speed: 2, direction: 1 }
 ];
 let platforms = [
-    { x: 0, y: 550, width: 800, height: 50 },
-    { x: 300, y: 400, width: 200, height: 20 },
-    { x: 600, y: 300, width: 100, height: 20 },
-    { x: 1400, y: 500, width: 300, height: 20 },
-    { x: 2000, y: 400, width: 200, height: 20 }
+    { x: 0, y: 550, width: 3000, height: 50 } // Extended the floor for the entire world width
 ];
-let chest = { x: 2200, y: 450, width: 50, height: 50 }; // Moved chest further down to the right
+let chest = { x: 2950, y: 500, width: 50, height: 50 }; // Placed chest at the far right end of the floor
 let keys = [];
 let money = [];
 let winning = false;
@@ -122,7 +118,7 @@ let winLogoSpeed = 2;
 let moneySpawnTimer = 0;
 let gameStarted = false;
 let cameraOffset = { x: 0, y: 0 };
-let worldWidth = 3000; // Extended the world width for more room
+let worldWidth = 3000; // Set world width for the extended floor
 
 // Movement Tracking
 let movement = { left: false, right: false, jump: false };
