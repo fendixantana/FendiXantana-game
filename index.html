@@ -32,55 +32,22 @@
         #playButton:hover {
             background-color: #218838;
         }
-        .controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .control-button {
-            width: 60px;
-            height: 60px;
-            background-color: #555;
-            color: white;
-            font-size: 18px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .control-button:active {
-            background-color: #777;
-        }
     </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
 <button id="playButton">Play</button>
-<div class="controls" style="display: none;">
-    <button class="control-button" id="leftButton">L</button>
-    <button class="control-button" id="rightButton">R</button>
-    <button class="control-button" id="jumpButton">J</button>
-</div>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const playButton = document.getElementById("playButton");
-const controls = document.querySelector('.controls');
-const leftButton = document.getElementById("leftButton");
-const rightButton = document.getElementById("rightButton");
-const jumpButton = document.getElementById("jumpButton");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 // Game Variables
-let player = { x: 100, y: 500, width: 50, height: 50, speed: 5, dy: 0, onGround: false, hasKey: false };
+let player = { x: 100, y: 500, width: 50, height: 50, speed: 5, dy: 0, onGround: false };
 let platforms = [
     { x: 0, y: 550, width: 3000, height: 50 },
     { x: 200, y: 450, width: 200, height: 20 },
@@ -91,22 +58,34 @@ let platforms = [
     { x: 2000, y: 200, width: 200, height: 20 },
 ];
 let chest = { x: 2100, y: 150, width: 50, height: 50 };
-let keys = [];
-let winning = false;
 let gameStarted = false;
 
-// Event Listeners for Movement
+// Movement Handlers
+let keys = {};
 document.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowLeft") player.x -= player.speed;
-    if (e.key === "ArrowRight") player.x += player.speed;
-    if (e.key === " " && player.onGround) player.dy = -15;
+    keys[e.key] = true;
+});
+document.addEventListener("keyup", (e) => {
+    keys[e.key] = false;
 });
 
+// Update Game State
 function update() {
-    player.dy += 1; // Gravity
+    // Horizontal Movement
+    if (keys["ArrowLeft"]) player.x -= player.speed;
+    if (keys["ArrowRight"]) player.x += player.speed;
+
+    // Jump
+    if (keys[" "] && player.onGround) {
+        player.dy = -15;
+        player.onGround = false;
+    }
+
+    // Gravity
+    player.dy += 1;
     player.y += player.dy;
 
-    // Check for collision with platforms
+    // Platform Collision
     player.onGround = false;
     for (const platform of platforms) {
         if (
@@ -121,40 +100,42 @@ function update() {
         }
     }
 
-    // Check for chest interaction
-    if (
-        player.x < chest.x + chest.width &&
-        player.x + player.width > chest.x &&
-        player.y < chest.y + chest.height &&
-        player.y + player.height > chest.y
-    ) {
-        winning = true;
-    }
+    // Keep Player within the Canvas
+    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+    player.y = Math.min(canvas.height - player.height, player.y);
 }
 
+// Render the Game
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Platforms
     ctx.fillStyle = "green";
     for (const platform of platforms) {
         ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
     }
+
+    // Draw Player
     ctx.fillStyle = "blue";
     ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Draw Chest
     ctx.fillStyle = "gold";
     ctx.fillRect(chest.x, chest.y, chest.width, chest.height);
 }
 
-function loop() {
+// Game Loop
+function gameLoop() {
     update();
     draw();
-    if (!winning) requestAnimationFrame(loop);
+    if (gameStarted) requestAnimationFrame(gameLoop);
 }
 
+// Start the Game
 playButton.addEventListener("click", () => {
     playButton.style.display = "none";
-    controls.style.display = "flex";
     gameStarted = true;
-    loop();
+    gameLoop();
 });
 </script>
 </body>
