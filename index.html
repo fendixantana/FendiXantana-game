@@ -32,16 +32,48 @@
         #playButton:hover {
             background-color: #218838;
         }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .control-button {
+            width: 60px;
+            height: 60px;
+            background-color: #555;
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .control-button:active {
+            background-color: #777;
+        }
     </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
 <button id="playButton">Play</button>
+<div class="controls" style="display: none;">
+    <button class="control-button" id="leftButton">L</button>
+    <button class="control-button" id="rightButton">R</button>
+    <button class="control-button" id="jumpButton">J</button>
+</div>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const playButton = document.getElementById("playButton");
+const controls = document.querySelector('.controls');
+const leftButton = document.getElementById("leftButton");
+const rightButton = document.getElementById("rightButton");
+const jumpButton = document.getElementById("jumpButton");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -67,21 +99,21 @@ const backgroundMusic = new Audio('background_music.mp3');
 const winningMusic = new Audio('winningsong.mp3');
 backgroundMusic.loop = true;
 
-// Variables
 let player = { x: 100, y: 500, width: 50, height: 50, speed: 5, dy: 0, onGround: false, hasKey: false };
 let platforms = [
-    { x: 0, y: 550, width: 3000, height: 50 }, // Extended the world to 3000px
-    { x: 300, y: 450, width: 200, height: 20 },
-    { x: 600, y: 350, width: 200, height: 20 },
-    { x: 900, y: 400, width: 150, height: 20 },
-    { x: 1500, y: 300, width: 150, height: 20 },
-    { x: 2500, y: 350, width: 200, height: 20 },
+    { x: 0, y: 550, width: 3000, height: 50 },
+    { x: 300, y: 500, width: 200, height: 20 },
+    { x: 600, y: 450, width: 200, height: 20 },
+    { x: 900, y: 400, width: 200, height: 20 },
+    { x: 1200, y: 350, width: 200, height: 20 },
+    { x: 1500, y: 450, width: 200, height: 20 },
+    { x: 1800, y: 500, width: 200, height: 20 },
 ];
 let enemies = [
     { x: 500, y: 500, width: 50, height: 50, speed: 2, direction: 1 },
-    { x: 1800, y: 500, width: 50, height: 50, speed: 2, direction: -1 },
+    { x: 1400, y: 450, width: 50, height: 50, speed: 2, direction: -1 },
 ];
-let chest = { x: 2800, y: 300, width: 50, height: 50 }; // Positioned at the far-right end
+let chest = { x: 2700, y: 500, width: 50, height: 50 };
 let keys = [];
 let money = [];
 let winning = false;
@@ -89,7 +121,15 @@ let cameraOffset = { x: 0, y: 0 };
 let keysPressed = {};
 let gameStarted = false;
 
-// Input Controls
+// Mobile Touch Controls
+leftButton.addEventListener("touchstart", () => keysPressed["ArrowLeft"] = true);
+leftButton.addEventListener("touchend", () => keysPressed["ArrowLeft"] = false);
+rightButton.addEventListener("touchstart", () => keysPressed["ArrowRight"] = true);
+rightButton.addEventListener("touchend", () => keysPressed["ArrowRight"] = false);
+jumpButton.addEventListener("touchstart", () => keysPressed[" "] = true);
+jumpButton.addEventListener("touchend", () => keysPressed[" "] = false);
+
+// Keyboard Controls
 window.addEventListener("keydown", (e) => keysPressed[e.key] = true);
 window.addEventListener("keyup", (e) => keysPressed[e.key] = false);
 
@@ -192,6 +232,7 @@ function gameLoop() {
 playButton.addEventListener("click", () => {
     playButton.style.display = "none";
     canvas.style.display = "block";
+    controls.style.display = "flex";
     backgroundMusic.play();
     gameLoop();
 });
