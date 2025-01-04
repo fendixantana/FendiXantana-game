@@ -126,6 +126,14 @@ window.addEventListener("keydown", (e) => keysPressed[e.key] = true);
 window.addEventListener("keyup", (e) => keysPressed[e.key] = false);
 
 // Touch Controls
+leftButton.addEventListener("touchstart", () => keysPressed["ArrowLeft"] = true);
+leftButton.addEventListener("touchend", () => keysPressed["ArrowLeft"] = false);
+rightButton.addEventListener("touchstart", () => keysPressed["ArrowRight"] = true);
+rightButton.addEventListener("touchend", () => keysPressed["ArrowRight"] = false);
+jumpButton.addEventListener("touchstart", () => keysPressed[" "] = true);
+jumpButton.addEventListener("touchend", () => keysPressed[" "] = false);
+
+// Also maintain existing mouse events for desktops
 leftButton.addEventListener("mousedown", () => keysPressed["ArrowLeft"] = true);
 leftButton.addEventListener("mouseup", () => keysPressed["ArrowLeft"] = false);
 rightButton.addEventListener("mousedown", () => keysPressed["ArrowRight"] = true);
