@@ -11,7 +11,7 @@
             background-color: #000;
         }
         canvas {
-            display: block;
+            display: none;
             margin: 0 auto;
             background: url('background.jpg') no-repeat center center;
             background-size: cover;
@@ -37,7 +37,6 @@
             bottom: 20px;
             left: 20px;
             display: flex;
-            flex-direction: column;
             gap: 10px;
         }
         .control-button {
@@ -75,8 +74,9 @@ const controls = document.querySelector('.controls');
 const leftButton = document.getElementById("leftButton");
 const rightButton = document.getElementById("rightButton");
 const jumpButton = document.getElementById("jumpButton");
-canvas.width = window.innerWidth; // Dynamically adjust canvas width
-canvas.height = window.innerHeight; // Dynamically adjust canvas height
+
+canvas.width = 800;
+canvas.height = 600;
 
 // Assets
 const assets = {
@@ -102,17 +102,16 @@ backgroundMusic.loop = true;
 
 // Variables
 let player = { x: 100, y: 500, width: 50, height: 50, speed: 5, dy: 0, onGround: false, hasKey: false };
-let enemies = [];
-let enemySpawnTimer = 0;
-let platforms = [
-    { x: 0, y: 550, width: 3000, height: 50 }, // Fully extended floor covering the entire game world
-    { x: 300, y: 450, width: 200, height: 20 }, // Example elevated platform
-    { x: 600, y: 350, width: 150, height: 20 }, // Higher platform leading to shortcut
-    { x: 1000, y: 500, width: 100, height: 20 }, // Dead-end platform
-    { x: 1500, y: 400, width: 250, height: 20 }, // Long platform with a path to the next area
-    { x: 2000, y: 300, width: 150, height: 20 }, // High shortcut platform
+let enemies = [
+    { x: 400, y: 500, width: 50, height: 50, speed: 2, direction: 1 },
+    { x: 600, y: 500, width: 50, height: 50, speed: 2, direction: -1 }
 ];
-let chest = { x: 2950, y: 500, width: 50, height: 50 }; // Chest placed at the far right end of the floor
+let platforms = [
+    { x: 0, y: 550, width: 800, height: 50 },
+    { x: 300, y: 400, width: 200, height: 20 },
+    { x: 600, y: 300, width: 150, height: 20 }
+];
+let chest = { x: 750, y: 500, width: 50, height: 50 };
 let keys = [];
 let money = [];
 let winning = false;
@@ -120,108 +119,23 @@ let winLogoY = 200;
 let winLogoSpeed = 2;
 let moneySpawnTimer = 0;
 let gameStarted = false;
-let cameraOffset = { x: 0, y: 0 };
-let worldWidth = 3000; // Extended the world width to match the floor
 
-// Movement Tracking
-let movement = { left: false, right: false, jump: false };
+// Input
+const keysPressed = {};
+window.addEventListener("keydown", (e) => keysPressed[e.key] = true);
+window.addEventListener("keyup", (e) => keysPressed[e.key] = false);
 
-// Adjust Camera
-function adjustCamera() {
-    cameraOffset.x = Math.max(0, Math.min(player.x - canvas.width / 2, worldWidth - canvas.width));
-    cameraOffset.y = 0; // Keep the Y-axis stable
-}
-
-// Spawn enemies after some time
-function spawnEnemies() {
-    enemySpawnTimer++;
-    if (enemySpawnTimer > 300) { // Delay enemy spawn by 300 frames
-        if (enemies.length < 5) {
-            const newEnemy = {
-                x: Math.random() * worldWidth,
-                y: 500,
-                width: 50,
-                height: 50,
-                speed: 2,
-                direction: 1
-            };
-            enemies.push(newEnemy);
-        }
-        enemySpawnTimer = 0;
-    }
-}
-
-// Enemy AI: Track the player
-function updateEnemies() {
-    for (const enemy of enemies) {
-        if (enemy.x < player.x) {
-            enemy.direction = 1;
-        } else if (enemy.x > player.x) {
-            enemy.direction = -1;
-        }
-
-        enemy.x += enemy.speed * enemy.direction;
-
-        // Collision with edges of the world
-        if (enemy.x <= 0 || enemy.x + enemy.width >= worldWidth) {
-            enemy.direction *= -1;
-        }
-
-        // Player collision with enemies
-        if (isColliding(player, enemy)) {
-            if (player.dy > 0) {
-                enemies = enemies.filter(e => e !== enemy);
-                keys.push({ x: enemy.x, y: enemy.y, width: 20, height: 20 });
-            } else if (!player.hasKey) {
-                alert("Game Over!");
-                window.location.reload();
-            }
-        }
-    }
-}
-
-// Touch Controls for Mobile
-leftButton.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    movement.left = true;
-});
-leftButton.addEventListener("touchend", (e) => {
-    e.preventDefault();
-    movement.left = false;
-});
-rightButton.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    movement.right = true;
-});
-rightButton.addEventListener("touchend", (e) => {
-    e.preventDefault();
-    movement.right = false;
-});
-jumpButton.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    movement.jump = true;
-});
-jumpButton.addEventListener("touchend", (e) => {
-    e.preventDefault();
-    movement.jump = false;
-});
-
-// Also maintain existing mouse events for desktops
-leftButton.addEventListener("mousedown", () => movement.left = true);
-leftButton.addEventListener("mouseup", () => movement.left = false);
-rightButton.addEventListener("mousedown", () => movement.right = true);
-rightButton.addEventListener("mouseup", () => movement.right = false);
-jumpButton.addEventListener("mousedown", () => movement.jump = true);
-jumpButton.addEventListener("mouseup", () => movement.jump = false);
+// Mobile Touch Controls
+leftButton.addEventListener("touchstart", () => keysPressed["ArrowLeft"] = true);
+leftButton.addEventListener("touchend", () => keysPressed["ArrowLeft"] = false);
+rightButton.addEventListener("touchstart", () => keysPressed["ArrowRight"] = true);
+rightButton.addEventListener("touchend", () => keysPressed["ArrowRight"] = false);
+jumpButton.addEventListener("touchstart", () => keysPressed[" "] = true);
+jumpButton.addEventListener("touchend", () => keysPressed[" "] = false);
 
 // Helper Functions
-function drawRect(obj, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(obj.x - cameraOffset.x, obj.y - cameraOffset.y, obj.width, obj.height);
-}
-
 function drawImage(obj, image) {
-    ctx.drawImage(image, obj.x - cameraOffset.x, obj.y - cameraOffset.y, obj.width, obj.height);
+    ctx.drawImage(image, obj.x, obj.y, obj.width, obj.height);
 }
 
 function isColliding(rect1, rect2) {
@@ -231,17 +145,13 @@ function isColliding(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
-// Game Loop
+// Game Update
 function update() {
     if (!winning) {
-        // Continuous movement for touch controls
-        if ((movement.left) && player.x > 0) {
-            player.x -= player.speed;
-        }
-        if ((movement.right) && player.x + player.width < worldWidth) {
-            player.x += player.speed;
-        }
-        if ((movement.jump) && player.onGround) {
+        // Player Movement
+        if (keysPressed["ArrowLeft"] && player.x > 0) player.x -= player.speed;
+        if (keysPressed["ArrowRight"] && player.x + player.width < canvas.width) player.x += player.speed;
+        if (keysPressed[" "] && player.onGround) {
             player.dy = -15;
             player.onGround = false;
         }
@@ -257,76 +167,4 @@ function update() {
                 player.dy = 0;
                 player.onGround = true;
             }
-        }
-
-        // Adjust Camera
-        adjustCamera();
-
-        // Spawn and update enemies
-        spawnEnemies();
-        updateEnemies();
-
-        // Chest Interaction
-        if (player.hasKey && isColliding(player, chest)) {
-            winning = true;
-            backgroundMusic.pause();
-            backgroundMusic.currentTime = 0;
-            winningMusic.play();
-        }
-
-        // Key Collection
-        for (const key of keys) {
-            if (isColliding(player, key)) {
-                player.hasKey = true;
-                keys = keys.filter(k => k !== key);
-            }
-        }
-    } else {
-        // Winning State
-        moneySpawnTimer++;
-        if (moneySpawnTimer % 10 === 0) { // Spawn money every 10 frames
-            money.push({ x: Math.random() * canvas.width + cameraOffset.x, y: 0, dy: 2 });
-        }
-
-        for (const bill of money) {
-            bill.y += bill.dy;
-        }
-
-        winLogoY += winLogoSpeed;
-        if (winLogoY <= 0 || winLogoY + 200 >= canvas.height) winLogoSpeed *= -1;
-    }
-}
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(assets.background, 0, 0, worldWidth, canvas.height);
-
-    for (const platform of platforms) drawRect(platform, "green");
-    drawImage(player, assets.player);
-    for (const enemy of enemies) drawImage(enemy, assets.enemy);
-    for (const key of keys) drawImage(key, assets.key);
-    drawImage(chest, assets.chest);
-
-    if (winning) {
-        for (const bill of money) drawRect(bill, "yellow");
-        ctx.drawImage(assets.winLogo, canvas.width / 2 - 200, winLogoY, 400, 200);
-    }
-}
-
-function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
-}
-
-playButton.addEventListener("click", () => {
-    playButton.style.display = "none";
-    canvas.style.display = "block";
-    controls.style.display = "flex";
-    gameStarted = true;
-    backgroundMusic.play();
-    loop();
-});
-</script>
-</body>
-</html>
+ 
