@@ -217,8 +217,15 @@ function updateGame() {
                 portal = { x: chest.x + 100, y: chest.y - 50, width: 50, height: 50 };
             }
         } else {
+            // Allow movement after winning
             if (keysPressed["ArrowLeft"] && player.x > 0) player.x -= player.speed;
             if (keysPressed["ArrowRight"] && player.x + player.width < platforms[0].width) player.x += player.speed;
+            if (keysPressed[" "] && player.onGround) {
+                player.dy = -15;
+                player.onGround = false;
+            }
+            player.dy += 1;
+            player.y += player.dy;
         }
 
         if (portal && isColliding(player, portal)) {
@@ -262,7 +269,9 @@ function drawGame() {
         for (const key of keys) drawObject(key, assets.key);
         drawObject(chest, assets.chest);
 
-        if (portal) drawObject(portal, assets.portal);
+        if (portal) {
+            drawObject(portal, assets.portal);
+        }
 
         if (winning) {
             money.push({ x: Math.random() * canvas.width + cameraOffset.x, y: 0, dy: 2 });
