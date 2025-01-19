@@ -97,6 +97,7 @@ const assets = {
     key: new Image(),
     chest: new Image(),
     winLogo: new Image(),
+    portal: new Image(),
 };
 assets.background.src = "background.jpg";
 assets.player.src = "player1.png";
@@ -104,6 +105,7 @@ assets.enemy.src = "Sbcoldcaller.png";
 assets.key.src = "key.png";
 assets.chest.src = "tchest.png";
 assets.winLogo.src = "winninglogo.png";
+assets.portal.src = "portal.png"; // Add a portal image
 
 // Audio
 const backgroundMusic = new Audio('background_music.mp3');
@@ -127,12 +129,14 @@ let enemies = [
     { x: 1400, y: 450, width: 50, height: 50, speed: 2, direction: -1 },
 ];
 let chest = { x: 2700, y: 500, width: 50, height: 50 };
+let portal = null; // Portal object
 let keys = [];
 let money = [];
 let winning = false;
 let cameraOffset = { x: 0, y: 0 };
 let keysPressed = {};
 let gameStarted = false;
+let level = 1; // Level tracker
 
 // Mobile Touch Controls
 leftButton.addEventListener("touchstart", () => keysPressed["ArrowLeft"] = true);
@@ -163,7 +167,7 @@ function adjustCamera() {
 }
 
 function updateGame() {
-    if (!winning) {
+    if (level === 1) {
         if (keysPressed["ArrowLeft"] && player.x > 0) player.x -= player.speed;
         if (keysPressed["ArrowRight"] && player.x + player.width < platforms[0].width) player.x += player.speed;
         if (keysPressed[" "] && player.onGround) {
@@ -209,31 +213,75 @@ function updateGame() {
             winning = true;
             backgroundMusic.pause();
             winningMusic.play();
+            portal = { x: chest.x + 100, y: chest.y, width: 50, height: 50 };
+        }
+
+        if (portal && isColliding(player, portal)) {
+            level = 2;
+            setupLevelTwo();
         }
 
         adjustCamera();
+    } else if (level === 2) {
+        // Level 2 basic functionality
+        if (keysPressed["ArrowLeft"] && player.x > 0) player.x -= player.speed;
+        if (keysPressed["ArrowRight"] && player.x + player.width < canvas.width) player.x += player.speed;
+        if (keysPressed[" "] && player.onGround) {
+            player.dy = -15;
+            player.onGround = false;
+        }
+
+        player.dy += 1;
+        player.y += player.dy;
+        if (player.y + player.height > canvas.height) {
+            player.y = canvas.height - player.height;
+            player.dy = 0;
+            player.onGround = true;
+        }
     }
 }
 
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(assets.background, 0 - cameraOffset.x, 0, platforms[0].width, canvas.height);
 
-    for (const platform of platforms) {
-        ctx.fillStyle = "green";
-        ctx.fillRect(platform.x - cameraOffset.x, platform.y - cameraOffset.y, platform.width, platform.height);
+    if (level === 1) {
+        ctx.drawImage(assets.background, 0 - cameraOffset.x, 0, platforms[0].width, canvas.height);
+
+        for (const platform of platforms) {
+            ctx.fillStyle = "green";
+            ctx.fillRect(platform.x - cameraOffset.x, platform.y - cameraOffset.y, platform.width, platform.height);
+        }
+
+        drawObject(player, assets.player);
+        for (const enemy of enemies) drawObject(enemy, assets.enemy);
+        for (const key of keys) drawObject(key, assets.key);
+        drawObject(chest, assets.chest);
+
+        if (portal) drawObject(portal, assets.portal);
+
+        if (winning) {
+            money.push({ x: Math.random() * canvas.width + cameraOffset.x, y: 0, dy: 2 });
+            for (const bill of money) bill.y += bill.dy;
+            ctx.drawImage(assets.winLogo, canvas.width / 2 - 200, 200, 400, 200);
+        }
+    } else if (level === 2) {
+        // Plain second level
+        ctx.fillStyle = "blue";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        drawObject(player, assets.player);
     }
+}
 
-    drawObject(player, assets.player);
-    for (const enemy of enemies) drawObject(enemy, assets.enemy);
-    for (const key of keys) drawObject(key, assets.key);
-    drawObject(chest, assets.chest);
-
-    if (winning) {
-        money.push({ x: Math.random() * canvas.width + cameraOffset.x, y: 0, dy: 2 });
-        for (const bill of money) bill.y += bill.dy;
-        ctx.drawImage(assets.winLogo, canvas.width / 2 - 200, 200, 400, 200);
-    }
+function setupLevelTwo() {
+    player.x = 100;
+    player.y = 500;
+    player.dy = 0;
+    player.onGround = false;
+    portal = null;
+    keys = [];
+    enemies = [];
+    platforms = [];
 }
 
 function gameLoop() {
